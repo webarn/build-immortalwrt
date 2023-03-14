@@ -17,6 +17,7 @@ env:
   TZ: Asia/Shanghai
   DEVICE: newifi3-d2
   UPLOAD_OUTPUT: true
+  UPLOAD_WETRANSFER: true
 
 jobs:
    newifi3-d2:
@@ -88,6 +89,15 @@ jobs:
       with:
         name: ${{ env.DEVICE }}--${{ env.FILE_DATE }}
         path: openwrt/bin
+        
+    - name: 上传至WeTransfer
+      id: wetransfer
+      if: env.UPLOAD_WETRANSFER == 'true' && !cancelled()
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
+        echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
+        echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
         
     - name: 整理输出文件
       run: |
